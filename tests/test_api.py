@@ -48,6 +48,30 @@ def test_missing_order(client):
     assert client.get("/api/orders/missing").status_code == 404
 
 
+def test_seeded_express_order_lookup(client):
+    # express-1002 is seeded on the last day of the previous month.
+    response = client.get("/api/orders/express-1002")
+    assert response.status_code == 200
+    assert "estimated_delivery" in response.json()
+
+
+@pytest.mark.parametrize(
+    ("created_at", "expected"),
+    [
+        ("2026-09-30T12:00:00+00:00", "2026-10-02"),
+        ("2026-01-31T12:00:00+00:00", "2026-02-02"),
+        ("2026-12-31T12:00:00+00:00", "2027-01-02"),
+        ("2026-10-05T12:00:00+00:00", "2026-10-07"),
+    ],
+)
+def test_express_estimated_delivery_crosses_month_end(created_at, expected):
+    order = main.order_detail(
+        {"id": "x", "customer": "c", "item": "i", "priority": "express",
+         "status": "received", "created_at": created_at}
+    )
+    assert order["estimated_delivery"] == expected
+
+
 def test_order_lookup_emits_telemetry(client, caplog, monkeypatch):
     # Traces: attach an in-memory exporter to the real tracer provider so we can
     # inspect finished spans without depending on console output/capturing.
