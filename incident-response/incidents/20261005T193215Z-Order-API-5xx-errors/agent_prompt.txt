@@ -1,0 +1,19 @@
+A Grafana alert fired for the Order Tracker service: "Order API 5xx errors", affecting route /api/orders/{order_id}.
+
+Incident evidence has already been collected in incident-response\incidents\20261005T193215Z-Order-API-5xx-errors/:
+  - payload.json  — the raw Grafana webhook payload
+  - endpoint.txt  — the affected API route (if one could be determined)
+  - logs.txt      — recent app logs (from Loki, or `docker compose logs app` as a fallback)
+  - traces.json   — related traces queried from Tempo
+
+Please:
+1. Read that evidence.
+2. Find the root cause in the application code (under app/).
+3. Fix the root cause.
+4. Add or update a test under tests/ that would have caught this.
+5. Run the test suite with `uv run --frozen pytest -q` and make sure it passes.
+6. Rebuild and restart the stack with `docker compose up --build -d --wait`.
+7. Verify the previously-failing request now works (e.g. with curl against the affected endpoint).
+8. Write a short incident report to incident-response\incidents\20261005T193215Z-Order-API-5xx-errors/report.md: root cause, the fix, and the verification output.
+
+You may use `git status`, `git diff`, `git add`, and `git commit` if you want to commit the fix. Never run `git push`. Never delete any files.

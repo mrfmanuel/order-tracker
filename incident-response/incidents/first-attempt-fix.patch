@@ -1,0 +1,46 @@
+diff --git a/app/main.py b/app/main.py
+index ea84dd7..6607c08 100644
+--- a/app/main.py
++++ b/app/main.py
+@@ -58,7 +58,7 @@ def order_detail(row):
+     order = as_dict(row)
+     if order["priority"] == "express":
+         placed_at = datetime.fromisoformat(order["created_at"])
+-        estimated_at = placed_at.replace(day=placed_at.day + 2)
++        estimated_at = placed_at + timedelta(days=2)
+         order["estimated_delivery"] = estimated_at.date().isoformat()
+     return order
+ 
+diff --git a/tests/test_api.py b/tests/test_api.py
+index 131ef7e..d5596f0 100644
+--- a/tests/test_api.py
++++ b/tests/test_api.py
+@@ -44,6 +44,28 @@ def test_create_and_update_order(client):
+     assert updated.json()["status"] == "shipped"
+ 
+ 
++def test_seeded_express_order_lookup(client):
++    # express-1002 is seeded on the last day of the previous month.
++    response = client.get("/api/orders/express-1002")
++    assert response.status_code == 200
++    assert "estimated_delivery" in response.json()
++
++
++@pytest.mark.parametrize(
++    ("created_at", "expected"),
++    [
++        ("2026-10-05T12:00:00+00:00", "2026-10-07"),
++        ("2026-09-30T12:00:00+00:00", "2026-10-02"),
++        ("2026-02-27T12:00:00+00:00", "2026-03-01"),
++        ("2026-12-31T12:00:00+00:00", "2027-01-02"),
++    ],
++)
++def test_express_estimated_delivery_crosses_month_end(created_at, expected):
++    row = {"id": "x", "customer": "c", "item": "i", "priority": "express",
++           "status": "received", "created_at": created_at}
++    assert main.order_detail(row)["estimated_delivery"] == expected
++
++
+ def test_missing_order(client):
+     assert client.get("/api/orders/missing").status_code == 404
+ 

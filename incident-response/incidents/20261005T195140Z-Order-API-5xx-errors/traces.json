@@ -1,0 +1,258 @@
+{
+  "traces": [
+    {
+      "traceID": "ca3c14aa7f3d46b5668cd8ec5d5fee15",
+      "rootServiceName": "order-tracker",
+      "rootTraceName": "get_order",
+      "startTimeUnixNano": "1791229839551605965",
+      "spanSet": {
+        "spans": [
+          {
+            "spanID": "17ef668d0f5bb943",
+            "startTimeUnixNano": "1791229839551605965",
+            "durationNanos": "785347",
+            "attributes": [
+              {
+                "key": "service.name",
+                "value": {
+                  "stringValue": "order-tracker"
+                }
+              },
+              {
+                "key": "http.route",
+                "value": {
+                  "stringValue": "/api/orders/{order_id}"
+                }
+              }
+            ]
+          }
+        ],
+        "matched": 1
+      },
+      "spanSets": [
+        {
+          "spans": [
+            {
+              "spanID": "17ef668d0f5bb943",
+              "startTimeUnixNano": "1791229839551605965",
+              "durationNanos": "785347",
+              "attributes": [
+                {
+                  "key": "service.name",
+                  "value": {
+                    "stringValue": "order-tracker"
+                  }
+                },
+                {
+                  "key": "http.route",
+                  "value": {
+                    "stringValue": "/api/orders/{order_id}"
+                  }
+                }
+              ]
+            }
+          ],
+          "matched": 1
+        }
+      ],
+      "serviceStats": {
+        "order-tracker": {
+          "spanCount": 1
+        }
+      }
+    },
+    {
+      "traceID": "48a31988de14428684bcff26114d0075",
+      "rootServiceName": "order-tracker",
+      "rootTraceName": "get_order",
+      "startTimeUnixNano": "1791229839506892035",
+      "durationMs": 3,
+      "spanSet": {
+        "spans": [
+          {
+            "spanID": "36225558ecc5926b",
+            "startTimeUnixNano": "1791229839506892035",
+            "durationNanos": "3625213",
+            "attributes": [
+              {
+                "key": "service.name",
+                "value": {
+                  "stringValue": "order-tracker"
+                }
+              },
+              {
+                "key": "http.route",
+                "value": {
+                  "stringValue": "/api/orders/{order_id}"
+                }
+              }
+            ]
+          }
+        ],
+        "matched": 1
+      },
+      "spanSets": [
+        {
+          "spans": [
+            {
+              "spanID": "36225558ecc5926b",
+              "startTimeUnixNano": "1791229839506892035",
+              "durationNanos": "3625213",
+              "attributes": [
+                {
+                  "key": "service.name",
+                  "value": {
+                    "stringValue": "order-tracker"
+                  }
+                },
+                {
+                  "key": "http.route",
+                  "value": {
+                    "stringValue": "/api/orders/{order_id}"
+                  }
+                }
+              ]
+            }
+          ],
+          "matched": 1
+        }
+      ],
+      "serviceStats": {
+        "order-tracker": {
+          "spanCount": 1
+        }
+      }
+    },
+    {
+      "traceID": "d8e79aa7e20dab49a6ef3cd9d18de213",
+      "rootServiceName": "order-tracker",
+      "rootTraceName": "get_order",
+      "startTimeUnixNano": "1791229779748950401",
+      "durationMs": 1,
+      "spanSet": {
+        "spans": [
+          {
+            "spanID": "1cee5bc1c8ee77a9",
+            "startTimeUnixNano": "1791229779748950401",
+            "durationNanos": "1817911",
+            "attributes": [
+              {
+                "key": "service.name",
+                "value": {
+                  "stringValue": "order-tracker"
+                }
+              },
+              {
+                "key": "http.route",
+                "value": {
+                  "stringValue": "/api/orders/{order_id}"
+                }
+              }
+            ]
+          }
+        ],
+        "matched": 1
+      },
+      "spanSets": [
+        {
+          "spans": [
+            {
+              "spanID": "1cee5bc1c8ee77a9",
+              "startTimeUnixNano": "1791229779748950401",
+              "durationNanos": "1817911",
+              "attributes": [
+                {
+                  "key": "service.name",
+                  "value": {
+                    "stringValue": "order-tracker"
+                  }
+                },
+                {
+                  "key": "http.route",
+                  "value": {
+                    "stringValue": "/api/orders/{order_id}"
+                  }
+                }
+              ]
+            }
+          ],
+          "matched": 1
+        }
+      ],
+      "serviceStats": {
+        "order-tracker": {
+          "spanCount": 1,
+          "errorCount": 1
+        }
+      }
+    },
+    {
+      "traceID": "df1a13e82e09fd96a2ccd85ef6955076",
+      "rootServiceName": "order-tracker",
+      "rootTraceName": "get_order",
+      "startTimeUnixNano": "1791229772372328239",
+      "durationMs": 3,
+      "spanSet": {
+        "spans": [
+          {
+            "spanID": "6e4a5bc547be6d4e",
+            "startTimeUnixNano": "1791229772372328239",
+            "durationNanos": "3029478",
+            "attributes": [
+              {
+                "key": "service.name",
+                "value": {
+                  "stringValue": "order-tracker"
+                }
+              },
+              {
+                "key": "http.route",
+                "value": {
+                  "stringValue": "/api/orders/{order_id}"
+                }
+              }
+            ]
+          }
+        ],
+        "matched": 1
+      },
+      "spanSets": [
+        {
+          "spans": [
+            {
+              "spanID": "6e4a5bc547be6d4e",
+              "startTimeUnixNano": "1791229772372328239",
+              "durationNanos": "3029478",
+              "attributes": [
+                {
+                  "key": "service.name",
+                  "value": {
+                    "stringValue": "order-tracker"
+                  }
+                },
+                {
+                  "key": "http.route",
+                  "value": {
+                    "stringValue": "/api/orders/{order_id}"
+                  }
+                }
+              ]
+            }
+          ],
+          "matched": 1
+        }
+      ],
+      "serviceStats": {
+        "order-tracker": {
+          "spanCount": 1,
+          "errorCount": 1
+        }
+      }
+    }
+  ],
+  "metrics": {
+    "inspectedBytes": "62290",
+    "completedJobs": 3,
+    "totalJobs": 3
+  }
+}

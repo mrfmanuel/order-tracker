@@ -1,0 +1,26 @@
+{
+  "status": "resolved",
+  "labels": {
+    "alertname": "Order API 5xx errors",
+    "grafana_folder": "Order Tracker Alerts",
+    "http_route": "/api/orders/{order_id}",
+    "service": "order-tracker"
+  },
+  "annotations": {
+    "dashboard": "http://localhost:3000/d/order-tracker/order-tracker",
+    "description": "0 5xx response(s) on route /api/orders/{order_id} in the last 2m (rule evaluated every 10s).",
+    "summary": "5xx errors on /api/orders/{order_id}"
+  },
+  "startsAt": "2026-10-05T19:49:50Z",
+  "endsAt": "2026-10-05T19:51:40Z",
+  "generatorURL": "http://localhost:3000/alerting/grafana/order-tracker-5xx-errors/view?orgId=1",
+  "fingerprint": "6d8dd5fa131b8417",
+  "silenceURL": "http://localhost:3000/alerting/silence/new?alertmanager=grafana&matcher=alertname%3DOrder+API+5xx+errors&matcher=grafana_folder%3DOrder+Tracker+Alerts&matcher=http_route%3D%2Fapi%2Forders%2F%7Border_id%7D&matcher=service%3Dorder-tracker&orgId=1",
+  "dashboardURL": "http://localhost:3000/d/order-tracker?orgId=1",
+  "panelURL": "http://localhost:3000/d/order-tracker?orgId=1&viewPanel=2",
+  "values": {
+    "A": 0,
+    "C": 0
+  },
+  "valueString": "[ var='A' labels={http_route=/api/orders/{order_id}} value=0 ], [ var='C' labels={http_route=/api/orders/{order_id}} value=0 ]"
+}
