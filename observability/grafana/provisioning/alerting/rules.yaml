@@ -1,0 +1,62 @@
+apiVersion: 1
+
+groups:
+  - orgId: 1
+    name: order-tracker-alerts
+    folder: Order Tracker Alerts
+    interval: 10s
+    rules:
+      - uid: order-tracker-5xx-errors
+        title: Order API 5xx errors
+        condition: C
+        for: 10s
+        # Treat "no data" and datasource/query errors as Normal rather than
+        # NoData/Error — the `or vector(0)` below already makes the query
+        # return a real 0 sample when there are no 5xx responses, so these
+        # are just a safety net (e.g. a brief gap while the Collector/
+        # Prometheus restart).
+        noDataState: OK
+        execErrState: OK
+        data:
+          - refId: A
+            relativeTimeRange:
+              from: 120
+              to: 0
+            datasourceUid: prometheus
+            model:
+              refId: A
+              editorMode: code
+              expr: sum by (http_route) (increase(order_lookup_requests_total{http_status_code=~"5.."}[2m])) or vector(0)
+              instant: true
+              range: false
+              intervalMs: 1000
+              maxDataPoints: 43200
+          - refId: C
+            datasourceUid: __expr__
+            model:
+              refId: C
+              type: threshold
+              expression: A
+              conditions:
+                - evaluator:
+                    type: gt
+                    params: [0]
+                  operator:
+                    type: and
+                  query:
+                    params: ["A"]
+                  reducer:
+                    type: last
+                    params: []
+        annotations:
+          summary: "5xx errors on {{ $labels.http_route }}"
+          description: >-
+            {{ $values.A.Value }} 5xx response(s) on route {{ $labels.http_route }}
+            in the last 2m (rule evaluated every 10s).
+          dashboard: http://localhost:3000/d/order-tracker/order-tracker
+          # Reserved keys Grafana uses to link this rule to a dashboard panel
+          # (shown as a "View panel" button on the alert instance page).
+          __dashboardUid__: order-tracker
+          __panelId__: "2"
+        labels:
+          service: order-tracker
