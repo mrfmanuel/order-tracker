@@ -1,40 +1,72 @@
 """OpenTelemetry setup for the order tracker.
 
-Exports traces, metrics, and logs to the console so they show up in
-``docker compose logs app``. This is intentionally minimal: it wires up
-console exporters for all three signals and hands back a tracer, a meter,
-and a logger for the app to instrument endpoints with.
+Exports traces, metrics, and logs via OTLP/gRPC to an OpenTelemetry Collector
+(``OTEL_EXPORTER_OTLP_ENDPOINT``, default ``http://localhost:4317``), which in
+turn forwards them to Tempo, Prometheus, and Loki — see ``observability/``.
+
+Set ``OTEL_CONSOLE_EXPORT=true`` to also print all three signals to the
+console (e.g. for `docker compose logs app`) alongside the OTLP export.
 """
 
 import atexit
 import logging
+import os
 
 from opentelemetry import metrics, trace
 from opentelemetry._logs import set_logger_provider
+from opentelemetry.exporter.otlp.proto.grpc._log_exporter import OTLPLogExporter
+from opentelemetry.exporter.otlp.proto.grpc.metric_exporter import OTLPMetricExporter
+from opentelemetry.exporter.otlp.proto.grpc.trace_exporter import OTLPSpanExporter
 from opentelemetry.sdk._logs import LoggerProvider, LoggingHandler
 from opentelemetry.sdk._logs.export import BatchLogRecordProcessor, ConsoleLogRecordExporter
 from opentelemetry.sdk.metrics import MeterProvider
 from opentelemetry.sdk.metrics.export import ConsoleMetricExporter, PeriodicExportingMetricReader
 from opentelemetry.sdk.resources import Resource
 from opentelemetry.sdk.trace import TracerProvider
-from opentelemetry.sdk.trace.export import ConsoleSpanExporter, SimpleSpanProcessor
+from opentelemetry.sdk.trace.export import BatchSpanProcessor, ConsoleSpanExporter, SimpleSpanProcessor
 
 SERVICE_NAME = "order-tracker"
 METRIC_EXPORT_INTERVAL_MILLIS = 5000
+OTLP_EXPORT_TIMEOUT_SECONDS = 0.5
+
+OTLP_ENDPOINT = os.getenv("OTEL_EXPORTER_OTLP_ENDPOINT", "http://localhost:4317")
+CONSOLE_EXPORT = os.getenv("OTEL_CONSOLE_EXPORT", "false").strip().lower() in ("1", "true", "yes")
+
+
+def _otlp_kwargs():
+    return {
+        "endpoint": OTLP_ENDPOINT,
+        "insecure": True,
+        "timeout": OTLP_EXPORT_TIMEOUT_SECONDS,
+        # Fail fast with no retries when the Collector isn't reachable (e.g. in
+        # tests run outside Docker), instead of grpc's default backoff/retry.
+        "retryable_error_codes": (),
+    }
+
 
 resource = Resource.create({"service.name": SERVICE_NAME})
 
-# Traces: export each finished span to the console as soon as it ends.
+# Traces: always ship to the Collector; optionally also print to console.
 tracer_provider = TracerProvider(resource=resource)
-tracer_provider.add_span_processor(SimpleSpanProcessor(ConsoleSpanExporter()))
+tracer_provider.add_span_processor(BatchSpanProcessor(OTLPSpanExporter(**_otlp_kwargs())))
+if CONSOLE_EXPORT:
+    tracer_provider.add_span_processor(SimpleSpanProcessor(ConsoleSpanExporter()))
 trace.set_tracer_provider(tracer_provider)
 tracer = trace.get_tracer("order_tracker")
 
-# Metrics: export on a short interval so counts show up quickly in the logs.
-metric_reader = PeriodicExportingMetricReader(
-    ConsoleMetricExporter(), export_interval_millis=METRIC_EXPORT_INTERVAL_MILLIS
-)
-meter_provider = MeterProvider(resource=resource, metric_readers=[metric_reader])
+# Metrics: export on a short interval so counts show up quickly.
+metric_readers = [
+    PeriodicExportingMetricReader(
+        OTLPMetricExporter(**_otlp_kwargs()), export_interval_millis=METRIC_EXPORT_INTERVAL_MILLIS
+    )
+]
+if CONSOLE_EXPORT:
+    metric_readers.append(
+        PeriodicExportingMetricReader(
+            ConsoleMetricExporter(), export_interval_millis=METRIC_EXPORT_INTERVAL_MILLIS
+        )
+    )
+meter_provider = MeterProvider(resource=resource, metric_readers=metric_readers)
 metrics.set_meter_provider(meter_provider)
 meter = metrics.get_meter("order_tracker")
 
@@ -44,9 +76,11 @@ order_lookup_requests = meter.create_counter(
     unit="1",
 )
 
-# Logs: route Python logging through OTel so log records also hit the console.
+# Logs: route Python logging through OTel so log records also ship out.
 logger_provider = LoggerProvider(resource=resource)
-logger_provider.add_log_record_processor(BatchLogRecordProcessor(ConsoleLogRecordExporter()))
+logger_provider.add_log_record_processor(BatchLogRecordProcessor(OTLPLogExporter(**_otlp_kwargs())))
+if CONSOLE_EXPORT:
+    logger_provider.add_log_record_processor(BatchLogRecordProcessor(ConsoleLogRecordExporter()))
 set_logger_provider(logger_provider)
 
 otel_handler = LoggingHandler(level=logging.INFO, logger_provider=logger_provider)
