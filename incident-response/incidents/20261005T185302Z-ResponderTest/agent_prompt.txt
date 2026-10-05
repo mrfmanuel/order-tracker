@@ -1,0 +1,6 @@
+This is a TEST notification (label test="true") from the Order Tracker service's Grafana alerting, alert name "ResponderTest". It is only a drill to verify the incident-response pipeline is wired up correctly.
+
+Do not investigate anything. Do not change, add, or delete any files. Do not run any commands.
+
+Acknowledge that you received this test alert, then end your reply with exactly one final line in this form:
+FINAL ANSWER: Test alert acknowledged; no action taken.

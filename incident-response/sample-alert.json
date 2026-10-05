@@ -1,0 +1,39 @@
+{
+  "receiver": "incident-responder",
+  "status": "firing",
+  "orgId": 1,
+  "alerts": [
+    {
+      "status": "firing",
+      "labels": {
+        "alertname": "ResponderTest",
+        "test": "true",
+        "http_route": "/api/orders/{order_id}",
+        "service": "order-tracker"
+      },
+      "annotations": {
+        "summary": "ResponderTest drill for the incident responder",
+        "description": "Manual test alert used to verify the incident-response webhook pipeline end to end. Not a real incident.",
+        "dashboard": "http://localhost:3000/d/order-tracker/order-tracker"
+      },
+      "startsAt": "2026-10-05T18:30:00Z",
+      "endsAt": "0001-01-01T00:00:00Z",
+      "generatorURL": "http://localhost:3000/alerting/grafana/order-tracker-5xx-errors/view",
+      "fingerprint": "responder-test-0001",
+      "silenceURL": "http://localhost:3000/alerting/silence/new?alertmanager=grafana",
+      "dashboardURL": "http://localhost:3000/d/order-tracker/order-tracker",
+      "panelURL": "",
+      "values": { "A": 0, "C": 0 }
+    }
+  ],
+  "groupLabels": { "alertname": "ResponderTest" },
+  "commonLabels": { "alertname": "ResponderTest", "test": "true" },
+  "commonAnnotations": { "summary": "ResponderTest drill for the incident responder" },
+  "externalURL": "http://localhost:3000",
+  "version": "1",
+  "groupKey": "{}/{}:{alertname=\"ResponderTest\"}",
+  "truncatedAlerts": 0,
+  "title": "[FIRING:1] ResponderTest",
+  "state": "alerting",
+  "message": "ResponderTest drill for the incident responder"
+}
