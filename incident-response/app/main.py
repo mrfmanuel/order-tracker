@@ -28,8 +28,12 @@ TEMPO_URL = os.getenv("TEMPO_URL", "http://127.0.0.1:3200")
 CLAUDE_BIN = os.getenv("CLAUDE_BIN", "claude")
 EVIDENCE_WINDOW_MINUTES = 10
 
-# Only these commands may be run by the agent's Bash tool. Deliberately not a
-# blanket "git *" — git is limited to read-only/stage/commit, never push.
+# Only these commands may be run by the agent's Bash/PowerShell tools.
+# Deliberately not a blanket "git *" — git is limited to read-only/stage/
+# commit, never push. On Windows, Claude Code can route shell execution
+# through a separate PowerShell tool rather than Bash, so every pattern is
+# mirrored for both — leaving only one allowlisted silently blocks every
+# command that happens to go through the other tool.
 ALLOWED_TOOLS = (
     "Read Edit Write "
     "Bash(uv *) "
@@ -38,7 +42,15 @@ ALLOWED_TOOLS = (
     "Bash(git status) Bash(git status *) "
     "Bash(git diff) Bash(git diff *) "
     "Bash(git add *) "
-    "Bash(git commit *)"
+    "Bash(git commit *) "
+    "PowerShell(uv *) "
+    "PowerShell(docker compose *) "
+    "PowerShell(curl *) "
+    "PowerShell(curl.exe *) "
+    "PowerShell(git status) PowerShell(git status *) "
+    "PowerShell(git diff) PowerShell(git diff *) "
+    "PowerShell(git add *) "
+    "PowerShell(git commit *)"
 )
 
 app = FastAPI(title="Incident Responder")
@@ -156,11 +168,30 @@ def build_prompt(incident_dir: Path, alertname: str, is_test: bool, route: str |
     )
 
 
-def launch_agent(incident_dir: Path, prompt: str) -> None:
+# Tracks the in-flight agent process per alertname, so a repeated firing
+# while one is still running doesn't start a second agent editing the same
+# files. Single-process service, so a plain dict is enough.
+_running_agents: dict[str, subprocess.Popen] = {}
+
+
+def launch_agent(incident_dir: Path, prompt: str, alertname: str) -> bool:
+    """Starts the headless agent, unless one is already running for this
+    alertname. Returns whether it was actually launched."""
+    existing = _running_agents.get(alertname)
+    if existing is not None and existing.poll() is None:
+        (incident_dir / "agent_prompt.txt").write_text(prompt, encoding="utf-8")
+        (incident_dir / "agent_response.md").write_text(
+            f"Skipped: an agent is already running for alert \"{alertname}\" "
+            f"(pid {existing.pid}). Not starting a second one to avoid two "
+            f"agents editing the same files at once.\n",
+            encoding="utf-8",
+        )
+        return False
+
     (incident_dir / "agent_prompt.txt").write_text(prompt, encoding="utf-8")
     output_path = incident_dir / "agent_response.md"
     with open(output_path, "w", encoding="utf-8") as output_file:
-        subprocess.Popen(
+        process = subprocess.Popen(
             [
                 CLAUDE_BIN,
                 "-p",
@@ -175,6 +206,8 @@ def launch_agent(incident_dir: Path, prompt: str) -> None:
             stderr=subprocess.STDOUT,
             stdin=subprocess.DEVNULL,
         )
+    _running_agents[alertname] = process
+    return True
 
 
 def handle_alert(alert: dict[str, Any]) -> dict[str, Any]:
@@ -194,13 +227,14 @@ def handle_alert(alert: dict[str, Any]) -> dict[str, Any]:
     (incident_dir / "traces.json").write_text(fetch_tempo_traces(route), encoding="utf-8")
 
     prompt = build_prompt(incident_dir, alertname, is_test, route)
-    launch_agent(incident_dir, prompt)
+    launched = launch_agent(incident_dir, prompt, alertname)
 
     return {
         "alertname": alertname,
         "is_test": is_test,
         "route": route,
         "incident_dir": str(incident_dir.relative_to(REPO_ROOT)),
+        "agent_launched": launched,
     }
 
 

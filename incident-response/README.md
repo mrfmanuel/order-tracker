@@ -25,7 +25,9 @@ Point a Grafana contact point (webhook type) at `http://<host>:8001/alerts`.
 
 If the alert carries the label `test="true"`, the prompt tells the agent this is only a drill: acknowledge it, change nothing, and give a one-line final answer. Otherwise the prompt asks it to read the evidence, find and fix the root cause in `app/`, add or update a test, run `uv run --frozen pytest -q`, rebuild with `docker compose up --build -d --wait`, verify the fix against the real endpoint, and write `report.md` into the incident folder.
 
-The agent is launched with `--allowedTools` restricted to `Read`, `Edit`, `Write`, and a Bash allowlist of `uv`, `docker compose`, `curl`, and `git status`/`diff`/`add`/`commit` — notably **not** a blanket `git *`, so `git push` is never an allowed command. The prompt also explicitly tells it never to push or delete files.
+The agent is launched with `--allowedTools` restricted to `Read`, `Edit`, `Write`, and an allowlist of `uv`, `docker compose`, `curl`, and `git status`/`diff`/`add`/`commit` — notably **not** a blanket `git *`, so `git push` is never an allowed command. The prompt also explicitly tells it never to push or delete files. Every pattern is listed for both `Bash(...)` and `PowerShell(...)`: on Windows, Claude Code can route shell execution through either tool, and allowlisting only one silently blocks every command that happens to go through the other — the agent's `Edit`/`Write` calls still succeed in that case (so it can look like it worked), but it can never run tests, rebuild, or verify anything.
+
+If an alert fires again while an agent for that same `alertname` is still running, the responder skips starting a second one (it still saves evidence to a new incident folder, with an `agent_response.md` noting the skip) — otherwise two agents could end up editing the same files at once.
 
 ## Testing it
 
