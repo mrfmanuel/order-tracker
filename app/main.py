@@ -7,7 +7,10 @@ from uuid import uuid4
 
 from fastapi import FastAPI, HTTPException
 from fastapi.responses import FileResponse
+from opentelemetry.trace import Status, StatusCode
 from pydantic import BaseModel, Field
+
+from app.telemetry import logger, order_lookup_requests, tracer
 
 
 DB_PATH = Path(os.getenv("ORDER_DB_PATH", "data/orders.db"))
@@ -98,13 +101,42 @@ def list_orders():
     return [as_dict(row) for row in rows]
 
 
-@app.get("/api/orders/{order_id}")
-def get_order(order_id: str):
+def fetch_order(order_id: str):
     with connect() as db:
         row = db.execute("SELECT * FROM orders WHERE id = ?", (order_id,)).fetchone()
     if row is None:
         raise HTTPException(404, "Order not found")
     return order_detail(row)
+
+
+ORDER_LOOKUP_ROUTE = "/api/orders/{order_id}"
+
+
+@app.get("/api/orders/{order_id}")
+def get_order(order_id: str):
+    with tracer.start_as_current_span(
+        "get_order", attributes={"http.route": ORDER_LOOKUP_ROUTE, "order.id": order_id}
+    ) as span:
+        status_code = 200
+        try:
+            return fetch_order(order_id)
+        except HTTPException as exc:
+            status_code = exc.status_code
+            raise
+        except Exception as exc:
+            status_code = 500
+            span.record_exception(exc)
+            raise
+        finally:
+            span.set_attribute("http.status_code", status_code)
+            span.set_status(Status(StatusCode.ERROR if status_code >= 500 else StatusCode.OK))
+            order_lookup_requests.add(
+                1, {"http.route": ORDER_LOOKUP_ROUTE, "http.status_code": status_code}
+            )
+            log = logger.info if status_code < 400 else (
+                logger.warning if status_code < 500 else logger.error
+            )
+            log("order lookup for %s -> %s", order_id, status_code)
 
 
 @app.post("/api/orders", status_code=201)
@@ -118,7 +150,7 @@ def create_order(order: NewOrder):
             (order_id, order.customer, order.item, order.priority, "received",
              datetime.now(timezone.utc).isoformat()),
         )
-    return get_order(order_id)
+    return fetch_order(order_id)
 
 
 @app.patch("/api/orders/{order_id}")
@@ -132,4 +164,4 @@ def update_status(order_id: str, update: StatusUpdate):
         )
     if cursor.rowcount == 0:
         raise HTTPException(404, "Order not found")
-    return get_order(order_id)
+    return fetch_order(order_id)
